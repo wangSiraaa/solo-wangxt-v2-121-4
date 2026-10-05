@@ -55,6 +55,18 @@ async def init_db() -> None:
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # 轻量兼容：旧的本地 SQLite 库（create_all 不会 ALTER 已有表）
+        # 缺少 plans.thresholds 列时补上，旧方案按“未设置阈值”处理。
+        if engine.dialect.name == "sqlite":
+            await conn.run_sync(_ensure_sqlite_columns)
+
+
+def _ensure_sqlite_columns(sync_conn) -> None:
+    from sqlalchemy import inspect, text
+
+    cols = {c["name"] for c in inspect(sync_conn).get_columns("plans")}
+    if cols and "thresholds" not in cols:
+        sync_conn.execute(text("ALTER TABLE plans ADD COLUMN thresholds JSON"))
 
 
 async def get_session() -> AsyncIterator[AsyncSession]:

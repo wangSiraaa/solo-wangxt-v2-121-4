@@ -57,7 +57,7 @@ export default function ResultsPanel({ result, basis }: { result: EvalResult; ba
       </section>
 
       <section>
-        <h3>② 重叠</h3>
+        <h3>③ 重叠</h3>
         {result.overlaps.length === 0 ? (
           <p className="ok-line">无重叠。</p>
         ) : (
@@ -80,7 +80,7 @@ export default function ResultsPanel({ result, basis }: { result: EvalResult; ba
       </section>
 
       <section>
-        <h3>③ 缺口</h3>
+        <h3>④ 缺口</h3>
         {result.gaps.filter((gp) => gp.width_c > 0).length === 0 ? (
           <p className="ok-line">无缺口（首尾覆盖实测范围、馏分连续）。</p>
         ) : (
@@ -104,7 +104,7 @@ export default function ResultsPanel({ result, basis }: { result: EvalResult; ba
       </section>
 
       <section>
-        <h3>④ 残余量与总量核对</h3>
+        <h3>⑤ 残余量与总量核对</h3>
         <table className="balance-table">
           <thead><tr><th>项目</th><th>体积 %</th><th>质量 %</th></tr></thead>
           <tbody>
@@ -139,7 +139,7 @@ export default function ResultsPanel({ result, basis }: { result: EvalResult; ba
       </section>
 
       <section className="method">
-        <h3>⑤ 计算方法与适用范围（导出同此声明）</h3>
+        <h3>⑥ 计算方法与适用范围（导出同此声明）</h3>
         <ul>
           <li><b>插值：</b>{result.method.interpolation}</li>
           <li><b>曲线坐标：</b>{result.method.recovery_axis}</li>

@@ -115,8 +115,39 @@ def build_markdown(exp: dict, plan: dict, result: dict) -> str:
         lines.append(f"质量基准说明：{mb['identity_note']}")
     lines.append("")
 
+    checks = result.get("threshold_checks")
+    if checks is not None:
+        lines.append("## 4. 课程核对阈值（教学判读）")
+        lines.append("")
+        lines.append(
+            "> 阈值仅用于课程统一判读，**不改变原始曲线、PCHIP 插值与任何产率计算**；"
+            "范围外切点仍按“不外推”处理，见第 5 节提示。"
+        )
+        lines.append("")
+        if checks["configured_keys"]:
+            lines.append("| 核对项 | 合格区间 | 实际体积产率 % | 状态 |")
+            lines.append("|--------|----------|--------------:|------|")
+            for it in checks["items"]:
+                if not it["configured"]:
+                    continue
+                interval = it["interval_pct"]
+                actual = _fmt(it["actual_pct"])
+                status = "✅ 通过" if it["passed"] else "❌ 不通过"
+                lines.append(f"| {it['label']} | {interval} | {actual} | {status} |")
+            lines.append("")
+            lines.append(
+                f"总体判定：{'✅ 全部通过' if checks['all_passed'] else '❌ 存在不通过项'}"
+            )
+            unconfigured = [it["label"] for it in checks["items"] if not it["configured"]]
+            if unconfigured:
+                lines.append("")
+                lines.append("未设置（不评）：" + "；".join(unconfigured))
+        else:
+            lines.append("本方案未设置任何核对阈值，不做通过/不通过判定。")
+        lines.append("")
+
     if result["issues"]:
-        lines.append("## 4. 数据与切点提示（请核实）")
+        lines.append("## 5. 数据与切点提示（请核实）")
         for it in result["issues"]:
             icon = {"error": "❌", "warning": "⚠️", "info": "ℹ️"}.get(it["severity"], "•")
             lines.append(f"- {icon} [{it['code']}] {it['message']}")

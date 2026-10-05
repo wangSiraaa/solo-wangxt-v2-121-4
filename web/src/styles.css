@@ -92,6 +92,33 @@ tr.sum td { background: #f8fafc; font-weight: 600; }
 
 .save-bar { display: flex; gap: 14px; align-items: center; margin-top: 18px; flex-wrap: wrap; }
 .save-note { color: #991b1b; font-size: 13px; }
+
+/* 课程核对阈值 */
+.threshold-editor {
+  border: 1px solid var(--border); border-radius: 8px; padding: 12px;
+  margin: 12px 0; background: var(--bg-soft);
+}
+.th-title { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+.th-sub { font-size: 12px; font-weight: 400; color: var(--gray); margin-left: 8px; }
+.th-grid { display: flex; gap: 16px; flex-wrap: wrap; }
+.th-item { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: #374151; }
+.th-label { font-weight: 600; }
+.th-input { display: flex; align-items: center; gap: 6px; }
+.th-hint { color: var(--gray); font-size: 12px; }
+.th-item input { width: 90px; padding: 5px 8px; border: 1px solid #d1d5db; border-radius: 5px; font-size: 13px; }
+.th-unit { color: var(--gray); }
+
+.checks .check-table td.actual { font-variant-numeric: tabular-nums; font-weight: 700; }
+.checks .check-table td.interval { font-variant-numeric: tabular-nums; }
+.check-table tr.pass { background: #f0fdf4; }
+.check-table tr.fail { background: #fef2f2; }
+.check-table tr.muted { color: var(--gray); }
+.badge { font-size: 12px; font-weight: 700; white-space: nowrap; }
+.badge.pass { color: #166534; }
+.badge.fail { color: #991b1b; }
+.check-summary { font-size: 13.5px; font-weight: 700; margin: 8px 2px; }
+.check-summary.pass { color: #166534; }
+.check-summary.fail { color: #991b1b; }
 .exports a { color: var(--blue); text-decoration: none; font-weight: 600; }
 .exports .sep { margin: 0 8px; color: #cbd5e1; }
 

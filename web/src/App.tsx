@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, exportUrl } from "./api";
 import type {
-  CurveSample, EvalResult, Experiment, PlanInput,
+  CurveSample, EvalResult, Experiment, PlanInput, PlanThresholds,
 } from "./types";
 import CurveChart from "./components/CurveChart";
 import CutEditor from "./components/CutEditor";
 import ResultsPanel from "./components/ResultsPanel";
 import IssuesPanel from "./components/IssuesPanel";
+import ThresholdEditor from "./components/ThresholdEditor";
+import ChecksPanel from "./components/ChecksPanel";
 
 function defaultCuts(sample: CurveSample) {
   const [lo, hi] = sample.range.temp_c;
@@ -29,6 +31,7 @@ export default function App() {
   const [basis, setBasis] = useState<"volume" | "mass">("volume");
   const [lossPct, setLossPct] = useState(0);
   const [cuts, setCuts] = useState<PlanInput["cuts"]>([]);
+  const [thresholds, setThresholds] = useState<PlanThresholds>({});
 
   const [result, setResult] = useState<EvalResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -59,11 +62,14 @@ export default function App() {
           setBasis(p.basis);
           setLossPct(p.loss_pct);
           setCuts(p.cuts);
+          // 旧方案可能没有 thresholds 字段：按“一项都未设置”正常展示
+          setThresholds(p.thresholds ?? {});
         } else {
           setPlanName(`${exp.name.split("｜")[0]}-方案`);
           setBasis("volume");
           setLossPct(0);
           setCuts(defaultCuts(s));
+          setThresholds({});
         }
         setSavedId(exp.plans && exp.plans.length ? exp.plans[0].id : null);
       })
@@ -71,8 +77,19 @@ export default function App() {
   }, [expId]);
 
   const payload: PlanInput = useMemo(
-    () => ({ name: planName, basis, loss_pct: Number.isFinite(lossPct) ? lossPct : 0, cuts }),
-    [planName, basis, lossPct, cuts]
+    () => ({
+      name: planName,
+      basis,
+      loss_pct: Number.isFinite(lossPct) ? lossPct : 0,
+      cuts,
+      // 只把已设置（有限数）的阈值发给后端；未设置项不传
+      thresholds: Object.fromEntries(
+        Object.entries(thresholds).filter(
+          ([, v]) => v !== null && v !== undefined && Number.isFinite(v)
+        )
+      ) as PlanThresholds,
+    }),
+    [planName, basis, lossPct, cuts, thresholds]
   );
 
   const timer = useRef<number | null>(null);
@@ -183,7 +200,10 @@ export default function App() {
             onPlanNameChange={setPlanName}
           />
 
+          <ThresholdEditor thresholds={thresholds} onChange={setThresholds} />
+
           <ResultsPanel result={result} basis={basis} />
+          <ChecksPanel result={result} />
 
           <div className="save-bar">
             <button className="btn primary" onClick={save} disabled={result.has_blocking_errors}>

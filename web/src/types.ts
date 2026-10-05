@@ -26,6 +26,7 @@ export interface SavedPlanSummary {
   name: string;
   basis: "volume" | "mass";
   loss_pct: number;
+  thresholds: PlanThresholds;
   cuts: CutInput[];
 }
 
@@ -35,11 +36,44 @@ export interface CutInput {
   end_temp_c: number;
 }
 
+/** 三项课程核对阈值（体积产率 %）；未设置的项缺省/null。 */
+export interface PlanThresholds {
+  min_union_yield_pct?: number | null;
+  max_overlap_pct?: number | null;
+  max_in_range_gap_pct?: number | null;
+}
+
 export interface PlanInput {
   name: string;
   basis: "volume" | "mass";
   loss_pct: number;
   cuts: CutInput[];
+  thresholds: PlanThresholds;
+}
+
+export type CheckKey =
+  | "min_union_yield_pct"
+  | "max_overlap_pct"
+  | "max_in_range_gap_pct";
+
+export interface ThresholdCheckItem {
+  key: CheckKey;
+  label: string;
+  note: string;
+  direction: "min" | "max";
+  threshold_pct: number | null;
+  interval_pct: string | null;
+  actual_pct: number | null;
+  configured: boolean;
+  /** true=通过 false=不通过 null=未设置阈值，不评 */
+  passed: boolean | null;
+}
+
+export interface ThresholdChecks {
+  items: ThresholdCheckItem[];
+  configured_keys: CheckKey[];
+  all_passed: boolean | null;
+  notice: string;
 }
 
 export interface Issue {
@@ -137,6 +171,7 @@ export interface EvalResult {
   issues: Issue[];
   has_blocking_errors: boolean;
   method: Record<string, string>;
+  threshold_checks: ThresholdChecks;
 }
 
 export interface CurveSample {

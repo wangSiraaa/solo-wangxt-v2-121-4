@@ -61,6 +61,9 @@ class Plan(Base):
     # [{"name": "轻石脑油", "start_temp_c": 35, "end_temp_c": 100}, ...]
     cuts: Mapped[list] = mapped_column(JSONLike, default=list)
     loss_pct: Mapped[float] = mapped_column(Float, default=0.0)
+    # 课程核对阈值（仅教学判读，不参与产率计算），如
+    # {"min_union_yield_pct": 60, "max_overlap_pct": 2, "max_in_range_gap_pct": 5}
+    thresholds: Mapped[dict] = mapped_column(JSONLike, default=dict)
     result_snapshot: Mapped[dict | None] = mapped_column(JSONLike, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
     updated_at: Mapped[datetime] = mapped_column(

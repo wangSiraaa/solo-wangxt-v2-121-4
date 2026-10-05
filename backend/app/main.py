@@ -28,6 +28,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from .config import settings
+from .checks import evaluate_checks
 from .curve import prepare_curve
 from .database import get_session, init_db
 from .density import prepare_density
@@ -65,7 +66,8 @@ async def health() -> dict:
 def _eval_experiment(exp: Experiment, payload: PlanIn) -> dict:
     curve = prepare_curve(exp.points)
     density = prepare_density(exp.density_rows or [])
-    return evaluate_plan(
+    thresholds = payload.thresholds.as_dict() if payload.thresholds else {}
+    result = evaluate_plan(
         curve=curve,
         cuts=[c.model_dump() for c in payload.cuts],
         loss_pct=payload.loss_pct,
@@ -74,6 +76,14 @@ def _eval_experiment(exp: Experiment, payload: PlanIn) -> dict:
         feed_density=exp.feed_density_g_cm3,
         residue_density=exp.residue_density_g_cm3,
     )
+    # 阈值只是教学判读：作为独立块附加，不触碰上面算出的任何产率数值
+    result["threshold_checks"] = evaluate_checks(result, thresholds)
+    return result
+
+
+def _plan_thresholds(plan: Plan) -> dict:
+    """旧方案没有 thresholds 列/键时按“未设置任何阈值”处理。"""
+    return dict(getattr(plan, "thresholds", None) or {})
 
 
 def _exp_to_out(exp: Experiment) -> dict:
@@ -132,6 +142,7 @@ async def load_seed(force: bool = False) -> dict:
                         basis=payload.basis,
                         cuts=[c.model_dump() for c in payload.cuts],
                         loss_pct=payload.loss_pct,
+                        thresholds=payload.thresholds.as_dict() if payload.thresholds else {},
                         result_snapshot=result,
                     )
                 )
@@ -193,6 +204,7 @@ async def get_experiment(exp_id: int) -> dict:
                 "name": p.name,
                 "basis": p.basis,
                 "loss_pct": p.loss_pct,
+                "thresholds": _plan_thresholds(p),
                 "cuts": p.cuts,
             }
             for p in sorted(exp.plans, key=lambda x: x.id)
@@ -242,6 +254,7 @@ async def create_plan(exp_id: int, payload: PlanIn) -> dict:
             basis=payload.basis,
             cuts=[c.model_dump() for c in payload.cuts],
             loss_pct=payload.loss_pct,
+            thresholds=payload.thresholds.as_dict() if payload.thresholds else {},
             result_snapshot=result,
         )
         session.add(plan)
@@ -261,7 +274,8 @@ async def get_plan(plan_id: int) -> dict:
         if plan is None:
             raise HTTPException(404, "方案不存在")
         payload = PlanIn(
-            name=plan.name, basis=plan.basis, cuts=plan.cuts, loss_pct=plan.loss_pct
+            name=plan.name, basis=plan.basis, cuts=plan.cuts, loss_pct=plan.loss_pct,
+            thresholds=_plan_thresholds(plan),
         )
         result = _eval_experiment(plan.experiment, payload)
         return {
@@ -282,8 +296,10 @@ async def export_plan(
         )
         if plan is None:
             raise HTTPException(404, "方案不存在")
+        thresholds = _plan_thresholds(plan)
         payload = PlanIn(
-            name=plan.name, basis=plan.basis, cuts=plan.cuts, loss_pct=plan.loss_pct
+            name=plan.name, basis=plan.basis, cuts=plan.cuts, loss_pct=plan.loss_pct,
+            thresholds=thresholds,
         )
         exp = plan.experiment
         result = _eval_experiment(exp, payload)
@@ -294,6 +310,7 @@ async def export_plan(
             "basis": plan.basis,
             "cuts": plan.cuts,
             "loss_pct": plan.loss_pct,
+            "thresholds": thresholds,
         }
         if format == "json":
             return Response(
