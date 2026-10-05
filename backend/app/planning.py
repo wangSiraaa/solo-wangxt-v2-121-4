@@ -51,6 +51,54 @@ def _merge(intervals: list[_Interval]) -> list[_Interval]:
     return out
 
 
+# ---- 阈值核对（教学判读）----
+# 每项：(字段 key, 展示名, 比较方向, 从 totals 取实际值)。
+# 只读取已算好的 totals，绝不回写——阈值不改变曲线、插值与产率计算。
+_THRESHOLD_SPECS = (
+    ("min_union_yield_pct", "最低切出体积产率（馏分并集）", ">=",
+     lambda t: t["union_yield_pct"]),
+    ("max_overlap_pct", "最大重叠体积产率", "<=",
+     lambda t: t["overlap_pct"]),
+    ("max_in_range_gap_pct", "最大范围内缺口体积产率（前+中+尾）", "<=",
+     lambda t: t["front_gap_pct"] + t["inter_gap_pct"] + t["tail_gap_pct"]),
+)
+
+
+def check_thresholds(totals: dict, thresholds: dict | None) -> list[dict]:
+    """对照方案阈值核对总量指标，返回每项的实际值、通过状态与判定区间。
+
+    未设置的项不出现在结果中；``thresholds`` 为空（旧方案）时返回空列表。
+    纯判读函数：不修改 ``totals``，也不参与任何产率计算。
+    """
+    if not thresholds:
+        return []
+    checks: list[dict] = []
+    for key, label, op, pick in _THRESHOLD_SPECS:
+        limit = thresholds.get(key)
+        if limit is None:
+            continue
+        limit = float(limit)
+        actual = round(float(pick(totals)), 4)
+        if op == ">=":
+            passed = actual >= limit - _W_TOL
+            interval = [limit, 100.0]
+        else:
+            passed = actual <= limit + _W_TOL
+            interval = [0.0, limit]
+        checks.append(
+            {
+                "key": key,
+                "label": label,
+                "op": op,
+                "threshold_pct": limit,
+                "actual_pct": actual,
+                "passed": passed,
+                "interval_pct": interval,
+            }
+        )
+    return checks
+
+
 def evaluate_plan(
     curve: PreparedCurve,
     cuts: list[dict],

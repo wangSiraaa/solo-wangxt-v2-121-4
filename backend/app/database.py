@@ -55,6 +55,21 @@ async def init_db() -> None:
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(_ensure_plan_thresholds_column)
+
+
+def _ensure_plan_thresholds_column(conn) -> None:
+    """老库兜底：create_all 不会给已存在的 plans 表补列，此处手动补 thresholds。"""
+    from sqlalchemy import inspect, text
+
+    insp = inspect(conn)
+    if "plans" not in insp.get_table_names():
+        return
+    cols = {c["name"] for c in insp.get_columns("plans")}
+    if "thresholds" in cols:
+        return
+    coltype = "JSONB" if conn.dialect.name == "postgresql" else "TEXT"
+    conn.execute(text(f"ALTER TABLE plans ADD COLUMN thresholds {coltype}"))
 
 
 async def get_session() -> AsyncIterator[AsyncSession]:

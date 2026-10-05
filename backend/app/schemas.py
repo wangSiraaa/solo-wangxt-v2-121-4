@@ -56,11 +56,30 @@ class CutIn(BaseModel):
     end_temp_c: float
 
 
+class ThresholdsIn(BaseModel):
+    """方案核对阈值（最多三项，均可留空）。
+
+    仅用于教学判读：对照体积基准总量指标给出通过/未通过，
+    不改变曲线、插值与产率计算。
+    """
+
+    min_union_yield_pct: float | None = Field(
+        default=None, ge=0, le=100, description="最低切出体积产率 %（馏分并集 ≥ 该值）"
+    )
+    max_overlap_pct: float | None = Field(
+        default=None, ge=0, le=100, description="最大重叠体积产率 %（≤ 该值）"
+    )
+    max_in_range_gap_pct: float | None = Field(
+        default=None, ge=0, le=100, description="最大范围内缺口体积产率 %（前+中+尾 ≤ 该值）"
+    )
+
+
 class PlanIn(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     basis: Literal["volume", "mass"] = "volume"
     cuts: list[CutIn] = Field(min_length=1)
     loss_pct: float = Field(default=0.0, ge=0, le=100)
+    thresholds: ThresholdsIn | None = None
 
 
 class PlanOut(BaseModel):
@@ -70,6 +89,7 @@ class PlanOut(BaseModel):
     basis: str
     cuts: list[dict]
     loss_pct: float
+    thresholds: dict | None = None
     result_snapshot: dict | None = None
 
     model_config = {"from_attributes": True}

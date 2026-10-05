@@ -13,6 +13,8 @@ export default function ResultsPanel({ result, basis }: { result: EvalResult; ba
   const m = t.mass;
   const useMass = basis === "mass" && m !== null;
   const T = useMass && m ? m : t;
+  const checks = result.threshold_checks ?? [];
+  const methodNo = checks.length ? "⑥" : "⑤";
 
   return (
     <div className="results">
@@ -138,8 +140,36 @@ export default function ResultsPanel({ result, basis }: { result: EvalResult; ba
         </table>
       </section>
 
+      {checks.length > 0 && (
+        <section>
+          <h3>⑤ 阈值核对（教学判读，不影响产率计算）</h3>
+          <table className="threshold-table">
+            <thead>
+              <tr><th>核对项</th><th>判定区间（体积 %）</th><th>实际值（体积 %）</th><th>结论</th></tr>
+            </thead>
+            <tbody>
+              {checks.map((ck) => (
+                <tr key={ck.key} className={ck.passed ? "pass" : "fail"}>
+                  <td>{ck.label}</td>
+                  <td>{g(ck.interval_pct[0])} ~ {g(ck.interval_pct[1])}</td>
+                  <td>{fmt(ck.actual_pct, 4)}</td>
+                  <td>
+                    <span className={`pill ${ck.passed ? "pass" : "fail"}`}>
+                      {ck.passed ? "✅ 通过" : "❌ 未通过"}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="hint">
+            实际值取自上方体积基准总量核对；收紧/放宽阈值只改变判定，不改变任何产率数值。
+          </p>
+        </section>
+      )}
+
       <section className="method">
-        <h3>⑤ 计算方法与适用范围（导出同此声明）</h3>
+        <h3>{methodNo} 计算方法与适用范围（导出同此声明）</h3>
         <ul>
           <li><b>插值：</b>{result.method.interpolation}</li>
           <li><b>曲线坐标：</b>{result.method.recovery_axis}</li>

@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, exportUrl } from "./api";
 import type {
-  CurveSample, EvalResult, Experiment, PlanInput,
+  CurveSample, EvalResult, Experiment, PlanInput, Thresholds,
 } from "./types";
 import CurveChart from "./components/CurveChart";
 import CutEditor from "./components/CutEditor";
+import ThresholdEditor from "./components/ThresholdEditor";
 import ResultsPanel from "./components/ResultsPanel";
 import IssuesPanel from "./components/IssuesPanel";
 
@@ -29,6 +30,7 @@ export default function App() {
   const [basis, setBasis] = useState<"volume" | "mass">("volume");
   const [lossPct, setLossPct] = useState(0);
   const [cuts, setCuts] = useState<PlanInput["cuts"]>([]);
+  const [thresholds, setThresholds] = useState<Thresholds>({});
 
   const [result, setResult] = useState<EvalResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -59,11 +61,13 @@ export default function App() {
           setBasis(p.basis);
           setLossPct(p.loss_pct);
           setCuts(p.cuts);
+          setThresholds(p.thresholds ?? {});  // 旧方案无阈值 => 空对象，正常展示
         } else {
           setPlanName(`${exp.name.split("｜")[0]}-方案`);
           setBasis("volume");
           setLossPct(0);
           setCuts(defaultCuts(s));
+          setThresholds({});
         }
         setSavedId(exp.plans && exp.plans.length ? exp.plans[0].id : null);
       })
@@ -71,8 +75,14 @@ export default function App() {
   }, [expId]);
 
   const payload: PlanInput = useMemo(
-    () => ({ name: planName, basis, loss_pct: Number.isFinite(lossPct) ? lossPct : 0, cuts }),
-    [planName, basis, lossPct, cuts]
+    () => ({
+      name: planName,
+      basis,
+      loss_pct: Number.isFinite(lossPct) ? lossPct : 0,
+      cuts,
+      thresholds,
+    }),
+    [planName, basis, lossPct, cuts, thresholds]
   );
 
   const timer = useRef<number | null>(null);
@@ -182,6 +192,8 @@ export default function App() {
             onBasisChange={setBasis}
             onPlanNameChange={setPlanName}
           />
+
+          <ThresholdEditor value={thresholds} onChange={setThresholds} />
 
           <ResultsPanel result={result} basis={basis} />
 

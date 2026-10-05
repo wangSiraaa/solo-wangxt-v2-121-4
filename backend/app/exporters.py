@@ -115,8 +115,27 @@ def build_markdown(exp: dict, plan: dict, result: dict) -> str:
         lines.append(f"质量基准说明：{mb['identity_note']}")
     lines.append("")
 
+    checks = result.get("threshold_checks") or []
+    if checks:
+        lines.append("## 4. 阈值核对（教学判读）")
+        lines.append("")
+        lines.append("| 核对项 | 判定区间（体积 %） | 实际值（体积 %） | 结论 |")
+        lines.append("|--------|--------------------|------------------:|------|")
+        for ck in checks:
+            lo, hi = ck["interval_pct"]
+            lines.append(
+                f"| {ck['label']} | {lo:g} ~ {hi:g} | {ck['actual_pct']:.4f} | "
+                f"{'✅ 通过' if ck['passed'] else '❌ 未通过'} |"
+            )
+        lines.append("")
+        lines.append(
+            "> 阈值仅用于教学判读与方案比较，不改变曲线、插值与产率计算；"
+            "实际值与上表总量核对中的数值完全一致。"
+        )
+        lines.append("")
+
     if result["issues"]:
-        lines.append("## 4. 数据与切点提示（请核实）")
+        lines.append(f"## {'5' if checks else '4'}. 数据与切点提示（请核实）")
         for it in result["issues"]:
             icon = {"error": "❌", "warning": "⚠️", "info": "ℹ️"}.get(it["severity"], "•")
             lines.append(f"- {icon} [{it['code']}] {it['message']}")

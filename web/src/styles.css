@@ -86,6 +86,12 @@ tr.sum td { background: #f8fafc; font-weight: 600; }
 .balance-table tr.identity.bad td { background: #fef2f2; color: #991b1b; }
 .mass-note { margin-left: 8px; font-weight: 400; }
 
+.thresholds .thr-hint { font-size: 11.5px; color: var(--gray); }
+.threshold-table tr.pass td { background: #f0fdf4; }
+.threshold-table tr.fail td { background: #fef2f2; }
+.pill.pass { background: #dcfce7; color: #166534; }
+.pill.fail { background: #fee2e2; color: #991b1b; }
+
 .method { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 8px; padding: 4px 16px 12px; }
 .method ul { margin: 4px 0; padding-left: 20px; }
 .method li { font-size: 12.5px; color: #334155; margin: 4px 0; }
